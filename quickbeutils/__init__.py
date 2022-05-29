@@ -1,4 +1,8 @@
 import os
+import json
+import random
+from time import sleep
+from datetime import timedelta, datetime
 from quickbelog import Log
 import quickbeutils.gmail as gmail
 import quickbeutils.aws_ses as aws_ses
@@ -84,6 +88,110 @@ def get_env_var_as_list(key: str, default: list = [], delimiter: str = ' ') -> l
     value = os.getenv(key, '')
     try:
         tokens = [token.strip() for token in value.strip().split(delimiter)]
+        return tokens
     except (TypeError, ValueError):
-        value = default
-    return tokens
+        return default
+
+
+def get_env_var_as_dict(key: str, default: dict = {}) -> dict:
+    try:
+        if default is not None:
+            default = json.dumps(default)
+        return dict(json.loads(os.getenv(key).replace("'", '"')))
+    except (TypeError, ValueError):
+        return default
+
+
+RETRY_PATTERN_INCREASING = 'INCREASING'
+RETRY_PATTERN_FIX = 'FIX'
+RETRY_PATTERN_RANDOM = 'RANDOM'
+
+
+def retry(
+        func, *args,
+        retries: int = 2,
+        delay: float = 2.0,
+        time_limit: float = 0,
+        delay_pattern: str = RETRY_PATTERN_INCREASING) -> int:
+    """
+
+    :param func: Function to execute. Function has to return rais any exception or error if it fails.
+    :param args: Arguments for this function has to follow the function
+    :param retries: Number of retries, if the last attempt will fail TimeoutError will be raised.
+    :param delay: Delay period (in seconds) between retries.
+    :param time_limit: Time limit for all retries.
+    :param delay_pattern: Delay pattern
+    :return:
+    """
+
+    sw_id = Log.start_stopwatch(f'Retry loop for {func}')
+    sleep_time = delay
+    delay_pattern = delay_pattern.upper()
+    for i in range(1, retries+1):
+        try:
+            func(*args)
+            return i
+        except Exception as e:
+            func_args = list(args)
+            Log.warning(
+                f'Failed the #{i} attempt ({e.__class__.__name__}: {e}). '
+                f'Function: {func.__name__}, Arguments: {func_args}'
+            )
+            time_passed = Log.stopwatch_seconds(stopwatch_id=sw_id, print_it=False)
+            if i < retries and (time_limit <= 0 or time_passed < time_limit):
+                if delay_pattern in ['RAND', RETRY_PATTERN_RANDOM]:
+                    sleep_time = random.uniform(delay/3, delay)
+                elif delay_pattern in ['FIXED', RETRY_PATTERN_FIX]:
+                    sleep_time = delay
+                Log.debug(f'Retrying within {sleep_time} seconds.')
+
+                sleep(sleep_time)
+                sleep_time *= 1.625
+            else:
+                raise TimeoutError(
+                    f'Failed {i} attempts for function {func.__name__}, aborting after {time_passed}.'
+                )
+
+
+def remove_from_string(s: str, characters_to_remove: str) -> str:
+    """
+
+    :param s: Base string.
+    :param characters_to_remove: All characters  in this str will be removed from base string.
+    :return: New string without these characters.
+    """
+    return s.translate(str.maketrans("", "", characters_to_remove))
+
+
+TIME_UNITS_SECONDS = 'seconds'
+VALID_TIME_UNITS_SECONDS = [TIME_UNITS_SECONDS, 'sec', 's']
+TIME_UNITS_MILLISECOND = 'millisecond'
+VALID_TIME_UNITS_MILLISECOND = [TIME_UNITS_MILLISECOND, 'msec', 'ms']
+VALID_TIME_UNITS = VALID_TIME_UNITS_SECONDS + VALID_TIME_UNITS_MILLISECOND
+
+
+def time_to_string(value: int, units: str = TIME_UNITS_SECONDS) -> str:
+    units = units.lower()
+    valid_units = VALID_TIME_UNITS
+    if units not in valid_units:
+        raise ValueError(f'Time unit {units} is not supported, please use one of these {VALID_TIME_UNITS}')
+
+    if units in VALID_TIME_UNITS_MILLISECOND:
+        value = value / 1000
+        if value == int(value):
+            value = int(value)
+
+    delta = timedelta(seconds=value)
+
+    minutes, seconds = divmod(value, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+
+    seconds_label = f'{seconds} seconds' if seconds > 0 else ''
+    minutes_label = f'{int(minutes)} minutes, ' if minutes > 0 else ''
+    hours_label = f'{int(hours)} hours, ' if hours > 0 else ''
+    days_label = f'{int(delta.days)} days, ' if delta.days > 0 else ''
+
+    human = f'{days_label}{hours_label}{minutes_label}{seconds_label}'.strip().strip(',')
+
+    return ' and'.join(human.rsplit(',', 1))

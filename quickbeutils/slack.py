@@ -33,8 +33,7 @@ def send_message(recipient_id: str, text: str):
         'Content-Type': 'application/json'
     }
 
-    resp = requests.request("POST", SLACK_POST_MESSAGE_URL, headers=headers, json=payload)
-    assert resp.status_code == 200
+    _check_for_errors(requests.request("POST", SLACK_POST_MESSAGE_URL, headers=headers, json=payload))
 
 
 def upload_file(recipient_id: str, file_path: str, file_name: str = '', comment: str = ''):
@@ -71,5 +70,11 @@ def upload_file(recipient_id: str, file_path: str, file_name: str = '', comment:
 
     url = f"{SLACK_UPLOAD_URL}?channels={recipient_id}&initial_comment={comment}&filename={file_name}"
 
-    resp = requests.request("POST", url, headers=headers, data=payload, files=files)
-    assert resp.status_code == 200
+    _check_for_errors(requests.request("POST", url, headers=headers, data=payload, files=files))
+
+
+def _check_for_errors(response: requests.Response):
+    try:
+        assert response.status_code == 200 and response.json().get('ok', False)
+    except AssertionError:
+        raise ValueError(f'Slack error: {response.text}')
