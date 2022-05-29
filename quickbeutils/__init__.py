@@ -112,7 +112,7 @@ def retry(
         retries: int = 2,
         delay: float = 2.0,
         time_limit: float = 0,
-        delay_pattern: str = RETRY_PATTERN_INCREASING) -> int:
+        delay_pattern: str = RETRY_PATTERN_INCREASING):
     """
 
     :param func: Function to execute. Function has to return rais any exception or error if it fails.
@@ -129,8 +129,8 @@ def retry(
     delay_pattern = delay_pattern.upper()
     for i in range(1, retries+1):
         try:
-            func(*args)
-            return i
+            result = func(*args)
+            return result
         except Exception as e:
             func_args = list(args)
             Log.warning(

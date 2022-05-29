@@ -27,18 +27,18 @@ class RetryTestCase(unittest.TestCase):
 
     def test_succeed_after_number_of_sec(self):
 
-        def true_after_seconds_sec(sw_id: str, seconds: int):
+        def return_after_x_seconds(sw_id: str, seconds: int):
             sec = Log.stopwatch_seconds(stopwatch_id=sw_id)
             if sec > seconds:
-                return True
+                return sec
             else:
                 raise ValueError(f'Too early, passed {sec}, waiting for {seconds}')
-
-        retries = retry(
-            true_after_seconds_sec, Log.start_stopwatch(_get_method_name()),
-            5, retries=5, delay=1
+        x = 5
+        n = retry(
+            return_after_x_seconds, Log.start_stopwatch(_get_method_name()),
+            x, retries=5, delay=1
         )
-        self.assertGreaterEqual(retries, 3)
+        self.assertGreaterEqual(n, x)
 
     def test_random_delay(self):
         max_time = 5.0
