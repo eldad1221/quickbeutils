@@ -3,11 +3,13 @@ import uuid
 import unittest
 from tempfile import tempdir
 from dotenv import load_dotenv
+from quickbeutils.slack import get_channel_messages
 from quickbeutils import send_slack_message, send_slack_attachment
 
 load_dotenv()
 
 UNIT_TEST_RECIPIENT_SLACK_ID = os.getenv('UNIT_TEST_RECIPIENT_SLACK_ID')
+UNIT_TEST_SLACK_CHANNEL_ID = os.getenv('UNIT_TEST_SLACK_CHANNEL_ID')
 
 
 class SlackTestCase(unittest.TestCase):
@@ -27,6 +29,15 @@ class SlackTestCase(unittest.TestCase):
             file_name='Download me.txt'
         )
         self.assertEqual(True, True)
+
+    def test_get_channel_messages(self):
+        result = get_channel_messages(
+            channel=UNIT_TEST_SLACK_CHANNEL_ID,
+            limit=3
+        )
+        self.assertIn('messages', result)
+        self.assertIn('ok', result)
+        self.assertEqual(result.get('ok'), True)
 
 
 if __name__ == '__main__':

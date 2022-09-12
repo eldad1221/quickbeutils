@@ -195,3 +195,39 @@ def time_to_string(value: int, units: str = TIME_UNITS_SECONDS) -> str:
     human = f'{days_label}{hours_label}{minutes_label}{seconds_label}'.strip().strip(',')
 
     return ' and'.join(human.rsplit(',', 1))
+
+
+def cast_mongo_types(d: dict) -> dict:
+    for k, v in d.items():
+        if isinstance(v, dict):
+            if '$numberInt' in v:
+                d[k] = int(v['$numberInt'])
+            elif '$numberDouble' in v:
+                d[k] = float(v['$numberDouble'])
+            else:
+                d[k] = cast_mongo_types(v)
+
+    return d
+
+
+def get_sub_items(d: object, item_key: str) -> list:
+    """
+    Get all dict sub items by items key.
+    :param d: Contained dict or list
+    :param item_key: Item key to search in contained dict or list
+    :return:
+    """
+    item_list = []
+    if isinstance(d, dict):
+        for k, v in d.items():
+            if k == item_key:
+                item_list.append(v)
+            elif isinstance(v, (dict, list)):
+                item_list.extend(get_sub_items(d=v, item_key=item_key))
+    elif isinstance(d, list):
+        for item in d:
+            if isinstance(item, (dict, list)):
+                item_list.extend(get_sub_items(d=item, item_key=item_key))
+    else:
+        raise TypeError(f'This method supports list or dict, not {type(d)}.')
+    return item_list

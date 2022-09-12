@@ -17,7 +17,7 @@ class StringUtilsTestCase(unittest.TestCase):
             3601: 'hours',
             int(3600*24+1): '1 days',
             int(3600*24*31+1): '31 days',
-            int(3600*24*365+1): '365 days',
+            int(3600*24*365+1+8120): '365 days',
             int(3600*24*2+3600*3+245): '2 days',
         }
         for sec, token in test_cases.items():

@@ -3,6 +3,7 @@ import mimetypes
 from os import getenv
 from quickbeutils.helpers import verify_config
 
+SLACK_CHANNEL_MESSAGES_URL = 'https://slack.com/api/conversations.history'
 SLACK_UPLOAD_URL = 'https://slack.com/api/files.upload'
 SLACK_POST_MESSAGE_URL = 'https://slack.com/api/chat.postMessage'
 SLACK_BOT_TOKEN_KEY = 'SLACK_BOT_TOKEN'
@@ -71,6 +72,39 @@ def upload_file(recipient_id: str, file_path: str, file_name: str = '', comment:
     url = f"{SLACK_UPLOAD_URL}?channels={recipient_id}&initial_comment={comment}&filename={file_name}"
 
     _check_for_errors(requests.request("POST", url, headers=headers, data=payload, files=files))
+
+
+def get_channel_messages(channel: str, oldest: int = None, latest: int = None, limit: int = 100) -> dict:
+    """
+    https://api.slack.com/methods/files.upload
+    :param channel:
+    :param oldest:
+    :param latest:
+    :param limit:
+    :return:
+    """
+
+    verify_config(
+        conf={
+            'SLACK_BOT_TOKEN': getenv(SLACK_BOT_TOKEN_KEY)
+        }
+    )
+    headers = {
+        'Authorization': getenv(SLACK_BOT_TOKEN_KEY)
+    }
+
+    url = f"{SLACK_CHANNEL_MESSAGES_URL}?channel={channel}"
+    if oldest is not None:
+        url += f'&oldest={oldest}'
+    if latest is not None:
+        url += f'&latest={latest}'
+    if limit is not None:
+        url += f'&limit={limit}'
+
+    resp = requests.request("GET", url, headers=headers)
+    _check_for_errors(resp)
+
+    return resp.json()
 
 
 def _check_for_errors(response: requests.Response):
