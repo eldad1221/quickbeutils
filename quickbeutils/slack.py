@@ -74,7 +74,7 @@ def upload_file(recipient_id: str, file_path: str, file_name: str = '', comment:
     _check_for_errors(requests.request("POST", url, headers=headers, data=payload, files=files))
 
 
-def get_channel_messages(channel: str, oldest: int = None, latest: int = None, limit: int = 100) -> dict:
+def get_channel_messages(channel: str, oldest: float = None, latest: float = None, limit: int = 100) -> dict:
     """
     https://api.slack.com/methods/files.upload
     :param channel:
