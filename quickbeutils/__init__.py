@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import random
 from time import sleep
 from datetime import timedelta, datetime
@@ -11,6 +12,7 @@ from email.utils import formataddr
 from smtplib import SMTPException
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 SEND_EMAIL_VIA_GMAIL = 'GMAIL'
 SEND_EMAIL_VIA_SMTP = 'SMTP'
@@ -22,15 +24,17 @@ def send_email(
         subject: str = None, sender_name: str = None,
         body_text: str = '',
         body_html: str = None,
+        attachments: dict = None,
         send_via: str = SEND_EMAIL_VIA_SMTP) -> bool:
     """
 
     :param body_html:
     :param body_text:
     :param sender: "From" address
+    :param sender_name: Sender name is optional.
     :param recipient: "To" address.
     :param subject: The subject line of the email.
-    :param sender_name: Sender name is optional.
+    :param attachments: Dictionary of base64 strings for attached files, file name as dictionary key
     :param send_via: One of the following: SMTP, AWS_SES, GMAIL
     :return:
     """
@@ -49,6 +53,12 @@ def send_email(
     # According to RFC 2046, the last part of a multipart message, in this case the HTML message is preferred.
     msg.attach(MIMEText(body_text, 'plain'))
     msg.attach(MIMEText(body_html, 'html'))
+
+    if attachments is not None:
+        for f_name, f_base64 in attachments.items():
+            attachment = MIMEApplication(base64.b64decode(f_base64.encode()), _subtype="txt")
+            attachment.add_header('Content-Disposition', 'attachment', filename=f_name)
+            msg.attach(attachment)
 
     send_via = send_via.upper().strip()
 
