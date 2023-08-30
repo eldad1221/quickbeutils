@@ -21,6 +21,7 @@ SEND_EMAIL_VIA_AWS_SES = 'AWS_SES'
 
 def send_email(
         sender: str, recipient: str,
+        reply_to: str = None,
         subject: str = None, sender_name: str = None,
         body_text: str = '',
         body_html: str = None,
@@ -28,10 +29,11 @@ def send_email(
         send_via: str = SEND_EMAIL_VIA_SMTP) -> bool:
     """
 
-    :param body_html:
-    :param body_text:
     :param sender: "From" address
     :param sender_name: Sender name is optional.
+    :param reply_to: Optional
+    :param body_text:
+    :param body_html:
     :param recipient: "To" address.
     :param subject: The subject line of the email.
     :param attachments: Dictionary of base64 strings for attached files, file name as dictionary key
@@ -48,6 +50,9 @@ def send_email(
     if body_html is None:
         txt = body_text.replace('\n', '<br>')
         body_html = f"<html><head><title>{subject}</title></head><body>{txt}</body></html>"
+
+    if reply_to is not None:
+        msg.add_header('reply-to', reply_to)
 
     # Record the MIME types of both parts - text/plain and text/html
     # According to RFC 2046, the last part of a multipart message, in this case the HTML message is preferred.

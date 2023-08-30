@@ -9,6 +9,7 @@ load_dotenv()
 
 UNIT_TEST_SENDER_EMAIL_ADDRESS = os.getenv('UNIT_TEST_SENDER_EMAIL_ADDRESS')
 UNIT_TEST_RECIPIENT_EMAIL_ADDRESS = os.getenv('UNIT_TEST_RECIPIENT_EMAIL_ADDRESS')
+UNIT_TEST_REPLY_TO_EMAIL_ADDRESS = os.getenv('UNIT_TEST_REPLY_TO_EMAIL_ADDRESS')
 UNIT_TEST_ATTACHMENT_BASE64_A = os.getenv('UNIT_TEST_ATTACHMENT_BASE64_A')
 UNIT_TEST_ATTACHMENT_BASE64_B = os.getenv('UNIT_TEST_ATTACHMENT_BASE64_B')
 
@@ -18,6 +19,7 @@ class SendEmailTestCase(unittest.TestCase):
     def test_send_via_aws_ses(self):
         result = send_email(
             sender=UNIT_TEST_SENDER_EMAIL_ADDRESS,
+            # reply_to=UNIT_TEST_REPLY_TO_EMAIL_ADDRESS,
             sender_name='Unit Testing',
             recipient=UNIT_TEST_RECIPIENT_EMAIL_ADDRESS,
             subject=f'Unit testing, sent by AWS SES {datetime.now()}',
@@ -29,7 +31,7 @@ class SendEmailTestCase(unittest.TestCase):
 
     def test_send_via_gmail(self):
         result = send_email(
-            sender='no-reply@iassessments.com',
+            sender=UNIT_TEST_SENDER_EMAIL_ADDRESS,
             sender_name='Unit Testing',
             recipient=UNIT_TEST_RECIPIENT_EMAIL_ADDRESS,
             subject=f'Unit testing, sent by gmail {datetime.now()}',
